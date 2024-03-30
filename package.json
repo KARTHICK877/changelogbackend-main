@@ -1,0 +1,33 @@
+{
+  "name": "changelogbackend",
+  "version": "1.0.0",
+  "description": "changelogs",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markactech/changelogbackend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/markactech/changelogbackend/issues"
+  },
+  "homepage": "https://github.com/markactech/changelogbackend#readme",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.0-beta.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.9.2",
+    "nodemailer": "^6.9.13",
+    "nodemailer-express-handlebars": "^6.1.2",
+    "nodemon": "^3.1.0",
+    "sequelize": "^6.37.1"
+  }
+}
