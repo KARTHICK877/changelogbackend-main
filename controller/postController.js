@@ -33,6 +33,7 @@ const handlebarOptions = {
 
 transporter.use("compile", hbs(handlebarOptions));
 
+
 const addPost = async (req, res) => {
   try {
     upload.single("image")(req, res, async (err) => {
@@ -42,16 +43,25 @@ const addPost = async (req, res) => {
         return res.status(400).json({ message: "Error uploading media" });
       }
 
-      const { title, description, email, type } = req.body;
-      const mediaPath = req.file ? req.file.path : null;
-      console.log("newImageFile", mediaPath);
+      const { title, email, type } = req.body;
+      const description = req.body.description; // HTML content from React Quill
 
-      // Send email with image as an attachment
+      const mediaPath = req.file ? req.file.path : "";
+     
+      // Check if email is valid
+      if (!email) {
+        return res.status(400).json({ message: "Email address is required" });
+      }
+
+      // Check if mediaPath exists
+      // if (!mediaPath) {
+      //   return res.status(400).json({ message: "Media path is missing" });
+      // }
       const today = new Date();
-      const createdate = today.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: '2-digit' 
+      const createdate = today.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
       });
 
       const mailOptions = {
@@ -59,51 +69,56 @@ const addPost = async (req, res) => {
         to: email,
         subject: "Welcome Orion ChangeLog",
         html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta http-equiv="x-ua-compatible" content="ie=edge">
-              <title>${title}</title>
-              <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-            </head>
-            <body>
-              <div style="margin: 0 auto;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                  <div style="width: 20%;">
-                    <p style="font-size: 14px; color: #333; margin-bottom: 10px;">${createdate}</p>
-                  </div>
-                  <div style="width: 80%; text-align: left;">
-                    <h1 style="font-size: 24px; color: #333; margin-bottom: 10px;">${title}</h1>
-                    <span style="font-size: 12px; padding: 5px 10px; background-color: #007bff; color: #fff; border-radius: 4px;">${type}</span>
-                    <p style="font-size: 16px; color: #333; margin-bottom: 20px;">${description}</p>
-                    <div style="margin-top: 20px;">
-                      <img src="cid:image" alt="Image" style="display: block; max-width: 100%; height: auto;">
-                    </div>
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="x-ua-compatible" content="ie=edge">
+            <title>${title}</title>
+            <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+          </head>
+          <body>
+            <div style="margin: 0 auto;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="width: 20%;">
+                  <p style="font-size: 14px; color: #333; margin-bottom: 10px;">${new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: '2-digit' 
+                  })}</p>
+                </div>
+                <div style="width: 80%; text-align: left;">
+                  <h1 style="font-size: 24px; color: #333; margin-bottom: 10px;">${title}</h1>
+                  <span style="font-size: 12px; padding: 5px 10px; background-color: #007bff; color: #fff; border-radius: 4px;">${type}</span>
+                  <p style="font-size: 16px; color: #333; margin-bottom: 20px;">${description}</p>
+                  <div style="margin-top: 20px;">
+                    <img src="cid:image" alt="Image" style="display: block; max-width: 100%; height: auto;">
                   </div>
                 </div>
               </div>
-            </body>
-          </html>
+            </div>
+          </body>
+        </html>
         `,
-        attachments: [
+        attachments: mediaPath ? [
           {
-            filename: 'image.jpg',
-            content: fs.readFileSync(mediaPath),
-            cid: 'image'
-          }
+            filename: "image.jpg",
+            content: fs.readFileSync(mediaPath ),
+            cid: "image",
+          },
         ]
+        :[],
       };
 
       await transporter.sendMail(mailOptions);
-      
+
       // Create post
       const post = await Post.create({
         title,
         description,
         email,
         image: mediaPath,
-        tag: type
+        tag: type,
       });
 
       res.status(201).json(post);
@@ -113,9 +128,6 @@ const addPost = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
-
 
 const getAllPosts = async (req, res) => {
   try {
@@ -185,8 +197,6 @@ const deletePostById = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    
-
     res.json({ message: "Post deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -234,24 +244,25 @@ const sendMail = async (
 
 function getUniquePosts(posts) {
   const uniquePostsMap = new Map();
-  posts.forEach(post => {
+  posts.forEach((post) => {
     uniquePostsMap.set(post.id, post);
   });
   return Array.from(uniquePostsMap.values());
 }
 const shareLogByMail = async (req, res) => {
   const { emails, post } = req.body;
-  let html = '';
+  let html = "";
   try {
     for (const email of emails) {
       // Reset the HTML content for each email
-      const postsForRecipient = post.filter(postlog => postlog.email === email.label);
+      const postsForRecipient = post.filter(
+        (postlog) => postlog.email === email.label
+      );
       const uniquePostsForRecipient = getUniquePosts(postsForRecipient);
-
 
       for (const postlog of uniquePostsForRecipient) {
         const { title, description, image, tag, createdAt } = postlog;
-          
+
         html += `
           <!DOCTYPE html>
           <html>
@@ -265,14 +276,18 @@ const shareLogByMail = async (req, res) => {
             <div style="margin: 0 auto;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="width: 20%;">
-                  <p style="font-size: 14px; color: #333; margin-bottom: 10px;">${moment(createdAt).format("MMMM DD, YYYY")}</p>
+                  <p style="font-size: 14px; color: #333; margin-bottom: 10px;">${moment(
+                    createdAt
+                  ).format("MMMM DD, YYYY")}</p>
                 </div>
                 <div style="width: 80%; text-align: left;">
                   <h1 style="font-size: 24px; color: #333; margin-bottom: 10px;">${title}</h1>
                   <span style="font-size: 12px; padding: 5px 10px; background-color: #007bff; color: #fff; border-radius: 4px;">${tag}</span>
                   <p style="font-size: 16px; color: #333; margin-bottom: 20px;">${description}</p>
                   <div style="margin-top: 20px;">
-                    <img src="cid:image_${postlog.id}" alt="Image" style="display: block; max-width: 100%; height: auto;">
+                    <img src="cid:image_${
+                      postlog.id
+                    }" alt="Image" style="display: block; max-width: 100%; height: auto;">
                   </div>
                 </div>
               </div>
@@ -282,20 +297,20 @@ const shareLogByMail = async (req, res) => {
         `;
       }
 
-       const attachments = post.map((postlog) => ({
-        filename: 'image.jpg',
+      const attachments = post.map((postlog) => ({
+        filename: "image.jpg",
         content: fs.readFileSync(postlog.image),
-        cid: `image_${postlog.id}`
+        cid: `image_${postlog.id}`,
       }));
 
-       const mailOptions = {
+      const mailOptions = {
         from: "devpodmain@gmail.com",
         to: email?.label,
         subject: "Welcome Orion ChangeLog",
         html,
-        attachments
+        attachments,
       };
-      html=""
+      html = "";
       // Send the email
       await transporter.sendMail(mailOptions);
     }
@@ -306,12 +321,6 @@ const shareLogByMail = async (req, res) => {
     res.status(500).json({ error: "Failed to send emails" });
   }
 };
-
-
-
-
-
-
 
 const editPost = async (req, res) => {
   try {
@@ -333,7 +342,10 @@ const editPost = async (req, res) => {
       post.description = description;
       post.email = email;
       post.tag = type;
-      post.image = mediaPath;
+      if (mediaPath) {
+        post.image = mediaPath;
+      } // Only update image if new image is provided
+
       if (!post) {
         return res.status(404).json({ message: "Post not found" });
       }
@@ -347,6 +359,7 @@ const editPost = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const addmaillist = async (req, res) => {
   const { emaillist } = req.body;
