@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const serverBaseUrl = "https://changelogbackend-production.up.railway.app/";
+const serverBaseUrl = "https://changelogbackend-main.onrender.com/";
 
 const handlebarOptions = {
   viewEngine: {
